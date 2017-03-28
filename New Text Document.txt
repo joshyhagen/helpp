@@ -1,0 +1,1210 @@
+using JRPC_Client;
+using System;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+using XDevkit;
+using XRPCLib;
+
+namespace Breeze
+{
+    public partial class Games : Form
+    {
+        XRPC jtag1 = new XRPC();
+        IXboxConsole jtag;
+        public Games()
+        {
+            InitializeComponent();
+
+            byte[] buffer2 = new byte[4];
+            this.byte_0 = buffer2;
+            buffer2[1] = 0x70;
+        }
+
+        public byte[] WideChar(string text)
+        {
+            byte[] array = new byte[text.Length * 2 + 2];
+            int num = 1;
+            array[0] = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char value = text[i];
+                array[num] = Convert.ToByte(value);
+                num += 2;
+            }
+            return array;
+        }
+
+        private byte[] byte_0;
+
+        private int int_1;
+        private int int_2;
+
+        public uint method_2(int int_25) =>
+        ((uint)(-2091574768 + (int_25 * 0x57f8)));
+
+        public static uint uint_0;
+        public static uint uint_9 = uint_0;
+        public static uint uint_10 = uint_0;
+
+        private string string1 = "0000000000";
+        private string string2 = "name";
+        private string string3 = "xuid";
+        private string string4 = "clanbbrev";
+
+        private void GamesForm_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        //Connection Start
+        private void BtnConnect_Click(object sender, EventArgs e)
+        {
+            try 
+            {
+                if (jtag.Connect(out jtag))
+                {
+                    jtag.XNotify("Breeze Successfully Connected!");
+                    MessageBox.Show("Connected", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    LblKernal.Text = "" + ((XDevkit.IXboxConsole)jtag).GetKernalVersion();
+                    LblCpuKey.Text = "" + ((XDevkit.IXboxConsole)jtag).GetCPUKey();
+                    LblConsoleIp.Text = "" + ((XDevkit.IXboxConsole)jtag).XboxIP();
+                    LblCpuTemp.Text = "" + jtag.GetTemperature(JRPC.TemperatureType.CPU);
+                    LblGpuTemp.Text = "" + jtag.GetTemperature(JRPC.TemperatureType.GPU);
+                }
+
+                else
+                {
+                    jtag.XNotify("Failed To Connect/Check Your Plugins");
+                    MessageBox.Show("Failed To Connect");
+                }
+            }
+
+            catch (Exception)
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnSendNotify_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                this.jtag.CallVoid(JRPC.ThreadType.Title, "xam.xex", 656, new object[]
+                {
+                    34,
+                    255,
+                    2,
+                    this.TxtNotify.Text.ToWCHAR(),
+                    1
+                });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //Part Of MSP Spoofer
+        private void SpoofMsp_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (jtag.ReadByte(0x9015c15c) == 0x81)
+                {
+                    jtag.SetMemory(0x8168a690, new byte[] 
+                    {
+                        0x38, 0x80, 0, 5, 0x80, 0x63, 0, 0x1c, 0x90, 0x83, 0, 4, 0x38, 0x80, 5, 0x39,
+                        0x90, 0x83, 0, 8, 0x38, 0x60, 0, 0, 0x4e, 0x80, 0, 0x20
+                    });
+ 
+                    byte[] data = new byte[4];
+                    data[0] = 0x60;
+                    ((IXboxConsole) jtag).SetMemory(0x818e8998, data);
+                    data = new byte[4];
+                    data[0] = 0x48;
+                    data[3] = 200;
+                    ((IXboxConsole) jtag).SetMemory(0x818ed084, data);
+                    data = new byte[4];
+                    data[0] = 0x39;
+                    data[1] = 0x60;
+                    ((IXboxConsole) jtag).SetMemory(0x9015c15c, data);
+                    data = new byte[4];
+                    data[0] = 0x60;
+                    ((IXboxConsole) jtag).SetMemory(0x9015c108, data);
+                }
+            }
+
+            catch
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnSpoofMsp_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                if (this.BtnSpoofMsp.Text == "Spoof MSP")
+                {
+                    ((IXboxConsole)jtag).SetMemory(0x8168a690, new byte[]
+                    {
+                        0x38, 0x80, 0, 5, 0x80, 0x63, 0, 0x1c, 0x90, 0x83, 0, 4, 0x38, 0x80, 5, 0x39,
+                        0x90, 0x83, 0, 8, 0x38, 0x60, 0, 0, 0x4e, 0x80, 0, 0x20
+                    });
+
+                    byte[] data = new byte[4];
+                    data[0] = 0x60;
+                    ((IXboxConsole)jtag).SetMemory(0x818e8998, data);
+                    data = new byte[4];
+                    data[0] = 0x48;
+                    data[3] = 200;
+                    ((IXboxConsole)jtag).SetMemory(0x818ed084, data);
+                    this.SpoofMsp.Start();
+                    ((IXboxConsole)jtag).XNotify("Breeze Tool Spoofed MSP");
+                }
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //BO1 Zombies Start
+        private void BtnBoZombiesGod_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x8230fd58, 0, "god");
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //BO2 Pre Game Start
+        private void BtnForceHost_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                ((IXboxConsole)jtag).CallVoid(0x824015e0, new object[] { 0, "party_connectToOthers 00; partyMigrate_disabled 01; sv_endGameIfISuck 0; badhost_endgameifisuck 0?; set allowAllNAT 1" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnForceStart_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x8227a500, this.byte_0);
+                ((IXboxConsole)jtag).CallVoid(0x824015e0, new object[] { 0, "set party_minplayers 1; xpartygo" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnGamemode_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                if (this.CmbGamemode.Text == "Free For All")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"dm\"; set_gametype \"dm\"" });
+                }
+
+                if (this.CmbGamemode.Text == "Search and Destroy")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"sd\"; set_gametype \"sd\"" });
+                }
+
+                if (this.CmbGamemode.Text == "Team Deathmatch")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"tdm\"; set_gametype \"tdm\"" });
+                }
+                if (this.CmbGamemode.Text == "Domination")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"dom\"; set_gametype \"dom\"" });
+                }
+                if (this.CmbGamemode.Text == "Demolition")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"dem\"; set_gametype \"dem\"" });
+                }
+                if (this.CmbGamemode.Text == "Kill Confirmed")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"conf\"; set_gametype \"conf\"" });
+                }
+                if (this.CmbGamemode.Text == "Hard Point")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"koth\"; set_gametype \"koth\"" });
+                }
+                if (this.CmbGamemode.Text == "Head Quarters")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"hq\"; set_gametype \"hq\"" });
+                }
+                if (this.CmbGamemode.Text == "Capture The Flag")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"ctf\"; set_gametype \"ctf\"" });
+                }
+                if (this.CmbGamemode.Text == "Gun Game")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"gun\"; set_gametype \"gun\"" });
+                }
+                if (this.CmbGamemode.Text == "One in the Chamber")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"oic\"; set_gametype \"oic\"" });
+                }
+                if (this.CmbGamemode.Text == "Sharp Shooter")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"shrp\"; set_gametype \"shrp\"" });
+                }
+                if (this.CmbGamemode.Text == "Sticks and Stones")
+                {
+                    jtag.CallVoid(uint_10, new object[] { 0, "set ui_gametype \"sas\"; set_gametype \"sas\"" });
+                }
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnSetGamertag_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                JRPC.SetMemory(this.jtag, 0xc035261c, this.WideChar(this.TxtPreGamertag.Text));
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnSetClanTag_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        //BO2 Off Host Start
+        private void BtnChange_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                if (jtag.GetMemory(0x83c4b298, 1)[0] == 1)
+                {
+                    string str = "userinfo \"" + this.string1 + @"\" + this.TxtGamertag + @"\" + this.string2 + @"\" + this.TxtClanTag.Text + @"\" + this.string3 + @"\" + this.string1 + "\"";
+                    jtag.CallVoid(0x822786e0, new object[] { 0, str });
+                }
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnShowHostOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82003f70, new byte[0x12]);
+                ((IXboxConsole)jtag).WriteBool(0x83c5a3bb, true);
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnShowHostOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82003f70, new byte[0x12]);
+                ((IXboxConsole)jtag).WriteBool(0x83c5a3bb, false);
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnShowFpsOn_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void BtnShowFpsOff_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void BtnLaser_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82255e1c, new byte[] { 0x2b, 11, 0, 1 });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        } 
+
+        private void BtnRedBoxes_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void BtnNoRecoil_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82259bc8, this.byte_0);
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnProModOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82497eb0, this.byte_0);
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_fovscale 1.3" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnProModOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_fovscale 1" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnNoSwayOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x826bad90, this.byte_0);
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnNoSwayOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                byte[] data = new byte[4];
+                data[0] = 0x91;
+                data[1] = 0x1d;
+                jtag.SetMemory(0x826bad90, data);
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnInvisibleGunOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82497eb0, this.byte_0);
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_gun_x -50" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnInvisibleGunOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_gun_x 0" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnLeftHandGunOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.SetMemory(0x82497eb0, this.byte_0);
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_gun_y 8" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnLeftHandGunOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x824015e0, new object[] { 0, "cg_gun_y 0" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnLeaveGame_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x824015e0, new object[] { 0, "disconnect" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //BO2 Host Start
+        private void BtnSendCenterMsg_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "< \"" + this.TxtCenterScreenMsg.Text + "\"" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //Part Of DiscoNames
+        private string TimerDiscoNames()
+        {
+            Random random = new Random();
+            this.int_1++;
+            this.int_2++;
+            if (this.int_1 > 7)
+            {
+                this.int_1 = 0;
+            }
+
+            if (this.int_2 > 10)
+            {
+                this.int_2 = 0;
+                this.int_1 = random.Next(0, 3);
+            }
+            return ("^" + this.int_1);
+        }
+
+        private void DiscoNames_Tick(object sender, EventArgs e)
+        {
+            for (int i = 0; i < 0x12; i++)
+            {
+                ((IXboxConsole)jtag).WriteString(this.method_2(i) + 0x55a0, this.TimerDiscoNames() + "^F\0");
+            }
+        }
+
+        private void BtnDiscoNamesOn_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                this.DiscoNames.Start();
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "< \"^Disco Names: ^ON\"" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnDiscoNamesOff_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                this.DiscoNames.Stop();
+                for (int i = 0; i < 0x12; i++)
+                {
+                    ((IXboxConsole)jtag).WriteString(this.method_2(i) + 0x55a0, "\0\0\0\0");
+                }
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "< \"^3Disco Names: ^OFF\"" });
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //BO2 Recovery Start
+        private void BtnQuickRecovery_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void BtnSendStats_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                byte[] Prestige = BitConverter.GetBytes((int)UpDownPrestige.Value);
+                jtag.SetMemory(0x843491a4, Prestige);
+
+                byte[] Score = BitConverter.GetBytes((int)UpDownScore.Value);
+                jtag.SetMemory(0x843491e0, Score);
+
+                byte[] RankXP = BitConverter.GetBytes((int)UpDownXp.Value);
+                jtag.SetMemory(0x843491bc, RankXP);
+
+                byte[] Rank = BitConverter.GetBytes((int)UpDownRank.Value);
+                jtag.SetMemory(0x843491b6, Rank);
+
+                byte[] Kills = BitConverter.GetBytes((int)UpDownKills.Value);
+                jtag.SetMemory(0x84348d00, Kills);
+
+                byte[] Deaths = BitConverter.GetBytes((int)UpDownDeaths.Value);
+                jtag.SetMemory(0x84348ad2, Deaths);
+
+                byte[] Wins = BitConverter.GetBytes((int)UpDownWins.Value);
+                jtag.SetMemory(0x843492e2, Wins);
+
+                byte[] Losses = BitConverter.GetBytes((int)UpDownLosses.Value);
+                jtag.SetMemory(0x84348d72, Losses);
+
+                byte[] KillStreak = BitConverter.GetBytes((int)UpDownKillstreak.Value);
+                jtag.SetMemory(0x84348fe8, KillStreak);
+
+                byte[] TimePlayed = BitConverter.GetBytes((int)UpDownTimePlayed.Value);
+                jtag.SetMemory(0x8434929a, TimePlayed);
+            }
+        }
+
+        private void BtnBo2Achievements_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "< \"^3Status: ^2Unlocking All Achievements\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_TRAPPED_IN_TIME" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_POP_GOES_THE_WEASEL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_FULL_LOCKDOWN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_GG_BRIDGE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_PARANORMAL_PROGRESS" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_A_BURST_OF_FLAVOR" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_FEED_THE_BEAST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_ACID_DRIP" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_MAKING_THE_ROUNDS" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_MONKEY_SEE_MONKEY_DOOM" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC2_PRISON_SIDEQUEST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_I_SEE_LIVE_PEOPLE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_FACING_THE_DRAGON" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_POLYARMORY" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_IM_MY_OWN_BEST_FRIEND" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_MAD_WITHOUT_POWER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_SLIPPERY_WHEN_UNDEAD" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_SHAFTED" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "; \"^3Status: ^225%\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_HAPPY_HOUR" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_VERTIGONER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC1_HIGHRISE_SIDEQUEST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_YOU_HAVE_NO_POWER_OVER_ME" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_FUEL_EFFICIENT" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_I_DONT_THINK_THEY_EXIST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_UNDEAD_MANS_PARTY_BUS" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_STANDARD_EQUIPMENT_MAY_VARY" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DANCE_ON_MY_GRAVE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_TRANSIT_SIDEQUEST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_THE_LIGHTS_OF_THEIR_EYES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DONT_FIRE_UNTIL_YOU_SEE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# MP_MISC_3" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# MP_MISC_5" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# MP_MISC_4" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_MISC_10K_SCORE_ALL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# MP_MISC_2" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# MP_MISC_1" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_BACK_TO_FUTURE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_MISC_WEAPONS" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_99PERCENT" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_CHLOE_LIVES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_MISC_ALL_INTEL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_MENENDEZ_CAPTURED" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "; \"^3Status: ^250%\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_HARPER_LIVES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_LINK_CIA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_OBAMA_SURVIVES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_WHEN_THE_REVOLUTION_COMES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_FARID_DUEL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_HARPER_FACE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_STORY_MASON_LIVES" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_SOCOTRA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_****STAN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_CARRIER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_DRONE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_AFGHANISTAN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_RTS_DOCKSIDE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_ONE_CHALLENGE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_ALL_CHALLENGES_IN_LEVEL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_ALL_CHALLENGES_IN_GAME" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_VETERAN_FUTURE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_VETERAN_PAST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_HAITI" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_LA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_BLACKOUT" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "; \"^3Status: ^275%\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_YEMEN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_PANAMA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_KARMA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_****STAN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_NICARAGUA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_AFGHANISTAN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_MONSOON" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# SP_COMPLETE_ANGOLA" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_FSIRT_AGAINST_THE_WALL" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_AWAKEN_THE_GAZEBO" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_MAZED_AND_CONFUSED" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_BURIED_SIDEQUEST" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_IM_YOUR_HUCKLEBERRY" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_ECTOPLASMIC_RESIDUE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_DEATH_FROM_BELOW" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_CANDYGRAM" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC3_REVISIONIST_HISTORIAN" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# \"ZM_DLC4_TOMB_SIDEQUEST\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_ALL_YOUR_BASE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_PLAYING_WITH_POWER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_OVERACHIEVER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_NOT_A_GOLD_DIGGER" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_KUNG_FU_GRIP" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_IM_ON_A_TANK" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_SAVING_THE_DAY_ALL_DAY" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_MASTER_OF_DISGUISE" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_DLC4_MASTER_WIZARD" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "; \"^3Status: ^2100%\"" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "# ZM_PRISON_PERK_CHERRY" });
+                jtag.CallVoid(uint_9, new object[] { -1, 0, "< \"^3Completed: ^2Unlocking All Achievements\"" });
+                jtag.XNotify("Unlocked All Achievements!");
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //BO2 Zombies Start
+        private void BtnMaxRank_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.CallVoid(0x84348a27, 0x7f);
+                jtag.SetMemory(0x84348c0b, new byte[]
+                {
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+                });
+
+                jtag.SetMemory(0x84348c13, new byte[]
+                {
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff
+                });
+                MessageBox.Show("Zombies Max Rank Set!");
+                jtag.XNotify("Zombies Max Rank Set!");
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        //GTAV Start
+        public static uint CreateHash(string Native)
+        {
+            uint num = 0u;
+            byte[] bytes = Encoding.UTF8.GetBytes(Native.ToLower());
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                uint num2 = (uint)bytes[i];
+                uint num3 = num + num2;
+                uint num4 = num3 + (num3 << 10);
+                num = (num4 ^ num4 >> 6);
+            }
+            uint num5 = num + (num << 3);
+            uint num6 = num5 ^ num5 >> 11;
+            return num6 + (num6 << 15);
+        }
+
+        private void BtnMaxAbilities_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                object[] arguments = new object[]
+                {
+                    2000
+                };
+
+                this.jtag.CallVoid(2194303248U, arguments);
+                Thread.Sleep(10);
+                object[] arguments2 = new object[]
+                {
+                    Games.CreateHash("MPPLY_REPORT_STRENGTH"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720U, arguments2);
+                object[] arguments3 = new object[]
+                {
+                    Games.CreateHash("MPPLY_COMMEND_STRENGTH"),
+                    100,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments3);
+                object[] arguments4 = new object[]
+                {
+                    Games.CreateHash("MPPLY_FRIENDLY"),
+                    100,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments4);
+                object[] arguments5 = new object[]
+                {
+                    Games.CreateHash("MPPLY_HELPFUL"),
+                    100,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments5);
+                object[] arguments6 = new object[]
+                {
+                    Games.CreateHash("MPPLY_GRIEFING"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments6);
+                object[] arguments7 = new object[]
+                {
+                    Games.CreateHash("MPPLY_VC_ANNOYINGME"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments7);
+                object[] arguments8 = new object[]
+                {
+                    Games.CreateHash("MPPLY_VC_HATE"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments8);
+                object[] arguments9 = new object[]
+                {
+                    Games.CreateHash("MPPLY_OFFENSIVE_LANGUAGE"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments9);
+                object[] arguments10 = new object[]
+                {
+                    Games.CreateHash("MPPLY_OFFENSIVE_TAGPLATE"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments10);
+                object[] arguments11 = new object[]
+                {
+                    Games.CreateHash("MPPLY_OFFENSIVE_UGC"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments11);
+                object[] arguments12 = new object[]
+                {
+                    Games.CreateHash("MPPLY_BAD_CREW_NAME"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments12);
+                object[] arguments13 = new object[]
+                {
+                    Games.CreateHash("MPPLY_BAD_CREW_MOTTO"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments13);
+                object[] arguments14 = new object[]
+                {
+                    Games.CreateHash("MPPLY_BAD_CREW_STATUS"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments14);
+                object[] arguments15 = new object[]
+                {
+                    Games.CreateHash("MPPLY_BAD_CREW_EMBLEM"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments15);
+                object[] arguments16 = new object[]
+                {
+                    Games.CreateHash("MPPLY_GAME_EXPLOITS"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments16);
+                object[] arguments17 = new object[]
+                {
+                    Games.CreateHash("MPPLY_EXPLOITS"),
+                    0,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720u, arguments17);
+                object[] arguments18 = new object[]
+                {
+                    Games.CreateHash("MPPLY_ISPUNISHED"),
+                    0,
+                    1
+                };
+                jtag.XNotify("GTAV Max Abilities Set");
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnClothing_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                jtag.XNotify("All Clothing Unlocked!");
+                string[] array = new string[]
+                {
+                    "CLTHS_AVAILABLE_OUTFIT",
+                    "CLTHS_AVAILABLE_JBIB",
+                    "CLTHS_AVAILABLE_JBIB_1",
+                    "CLTHS_AVAILABLE_JBIB_2",
+                    "CLTHS_AVAILABLE_JBIB_3",
+                    "CLTHS_AVAILABLE_JBIB_4",
+                    "CLTHS_AVAILABLE_JBIB_5",
+                    "CLTHS_AVAILABLE_JBIB_6",
+                    "CLTHS_AVAILABLE_JBIB_7",
+                    "CLTHS_AVAILABLE_LEGS",
+                    "CLTHS_AVAILABLE_LEGS_1",
+                    "CLTHS_AVAILABLE_LEGS_2",
+                    "CLTHS_AVAILABLE_LEGS_3",
+                    "CLTHS_AVAILABLE_LEGS_4",
+                    "CLTHS_AVAILABLE_LEGS_5",
+                    "CLTHS_AVAILABLE_LEGS_6",
+                    "CLTHS_AVAILABLE_LEGS_7",
+                    "CLTHS_AVAILABLE_FEET",
+                    "CLTHS_AVAILABLE_FEET_1",
+                    "CLTHS_AVAILABLE_FEET_2",
+                    "CLTHS_AVAILABLE_FEET_3",
+                    "CLTHS_AVAILABLE_FEET_4",
+                    "CLTHS_AVAILABLE_FEET_5",
+                    "CLTHS_AVAILABLE_FEET_6",
+                    "CLTHS_AVAILABLE_FEET_7",
+                    "CLTHS_AVAILABLE_PROPS",
+                    "CLTHS_AVAILABLE_PROPS_1",
+                    "CLTHS_AVAILABLE_PROPS_2",
+                    "CLTHS_AVAILABLE_PROPS_3",
+                    "CLTHS_AVAILABLE_PROPS_4",
+                    "CLTHS_AVAILABLE_PROPS_5",
+                    "CLTHS_AVAILABLE_PROPS_6",
+                    "CLTHS_AVAILABLE_PROPS_7",
+                    "CLTHS_AVAILABLE_PROPS_8",
+                    "CLTHS_AVAILABLE_PROPS_9",
+                    "CLTHS_AVAILABLE_PROPS_10",
+                    "CLTHS_AVAILABLE_TEETH",
+                    "CLTHS_AVAILABLE_TEETH_1",
+                    "CLTHS_AVAILABLE_TEETH_2",
+                    "CLTHS_AVAILABLE_BERD",
+                    "CLTHS_AVAILABLE_BERD_1",
+                    "CLTHS_AVAILABLE_BERD_2",
+                    "CLTHS_AVAILABLE_BERD_3",
+                    "CLTHS_AVAILABLE_BERD_4",
+                    "CLTHS_AVAILABLE_BERD_5",
+                    "CLTHS_AVAILABLE_BERD_6",
+                    "CLTHS_AVAILABLE_BERD_7",
+                    "CLTHS_AVAILABLE_TORSO",
+                    "CLTHS_AVAILABLE_SPECIAL",
+                    "CLTHS_AVAILABLE_SPECIAL_1",
+                    "CLTHS_AVAILABLE_SPECIAL_2",
+                    "CLTHS_AVAILABLE_SPECIAL_3",
+                    "CLTHS_AVAILABLE_SPECIAL_4",
+                    "CLTHS_AVAILABLE_SPECIAL_5",
+                    "CLTHS_AVAILABLE_SPECIAL_6",
+                    "CLTHS_AVAILABLE_SPECIAL_7",
+                    "CLTHS_AVAILABLE_SPECIAL2",
+                    "CLTHS_AVAILABLE_SPECIAL2_1",
+                    "CLTHS_AVAILABLE_DECL",
+                    "CLTHS_ACQUIRED_OUTFIT",
+                    "CLTHS_ACQUIRED_JBIB",
+                    "CLTHS_ACQUIRED_JBIB_1",
+                    "CLTHS_ACQUIRED_JBIB_2",
+                    "CLTHS_ACQUIRED_JBIB_3",
+                    "CLTHS_ACQUIRED_JBIB_4",
+                    "CLTHS_ACQUIRED_JBIB_5",
+                    "CLTHS_ACQUIRED_JBIB_6",
+                    "CLTHS_ACQUIRED_JBIB_7",
+                    "CLTHS_ACQUIRED_LEGS",
+                    "CLTHS_ACQUIRED_LEGS_1",
+                    "CLTHS_ACQUIRED_LEGS_2",
+                    "CLTHS_ACQUIRED_LEGS_3",
+                    "CLTHS_ACQUIRED_LEGS_4",
+                    "CLTHS_ACQUIRED_LEGS_5",
+                    "CLTHS_ACQUIRED_LEGS_6",
+                    "CLTHS_ACQUIRED_LEGS_7",
+                    "CLTHS_ACQUIRED_FEET",
+                    "CLTHS_ACQUIRED_FEET_1",
+                    "CLTHS_ACQUIRED_FEET_2",
+                    "CLTHS_ACQUIRED_FEET_3",
+                    "CLTHS_ACQUIRED_FEET_4",
+                    "CLTHS_ACQUIRED_FEET_5",
+                    "CLTHS_ACQUIRED_FEET_6",
+                    "CLTHS_ACQUIRED_FEET_7",
+                    "CLTHS_ACQUIRED_PROPS",
+                    "CLTHS_ACQUIRED_PROPS_1",
+                    "CLTHS_ACQUIRED_PROPS_2",
+                    "CLTHS_ACQUIRED_PROPS_3",
+                    "CLTHS_ACQUIRED_PROPS_4",
+                    "CLTHS_ACQUIRED_PROPS_5",
+                    "CLTHS_ACQUIRED_PROPS_6",
+                    "CLTHS_ACQUIRED_PROPS_7",
+                    "CLTHS_ACQUIRED_PROPS_8",
+                    "CLTHS_ACQUIRED_PROPS_9",
+                    "CLTHS_ACQUIRED_PROPS_10",
+                    "CLTHS_ACQUIRED_TEETH",
+                    "CLTHS_ACQUIRED_TEETH_1",
+                    "CLTHS_ACQUIRED_TEETH_2",
+                    "CLTHS_ACQUIRED_BERD",
+                    "CLTHS_ACQUIRED_BERD_1",
+                    "CLTHS_ACQUIRED_BERD_2",
+                    "CLTHS_ACQUIRED_BERD_3",
+                    "CLTHS_ACQUIRED_BERD_4",
+                    "CLTHS_ACQUIRED_BERD_5",
+                    "CLTHS_ACQUIRED_BERD_6",
+                    "CLTHS_ACQUIRED_BERD_7",
+                    "CLTHS_ACQUIRED_TORSO",
+                    "CLTHS_ACQUIRED_SPECIAL",
+                    "CLTHS_ACQUIRED_SPECIAL_1",
+                    "CLTHS_ACQUIRED_SPECIAL_2",
+                    "CLTHS_ACQUIRED_SPECIAL_3",
+                    "CLTHS_ACQUIRED_SPECIAL_4",
+                    "CLTHS_ACQUIRED_SPECIAL_5",
+                    "CLTHS_ACQUIRED_SPECIAL_6",
+                    "CLTHS_ACQUIRED_SPECIAL_7",
+                    "CLTHS_ACQUIRED_SPECIAL2",
+                    "CLTHS_ACQUIRED_SPECIAL2_1",
+                    "CLTHS_ACQUIRED_DECL",
+                    "DLC_APPAREL_ACQUIRED_0",
+                    "DLC_APPAREL_ACQUIRED_1",
+                    "DLC_APPAREL_ACQUIRED_2",
+                    "DLC_APPAREL_ACQUIRED_3",
+                    "DLC_APPAREL_ACQUIRED_4",
+                    "DLC_APPAREL_ACQUIRED_5",
+                    "DLC_APPAREL_ACQUIRED_6",
+                    "DLC_APPAREL_ACQUIRED_7",
+                    "DLC_APPAREL_ACQUIRED_8",
+                    "DLC_APPAREL_ACQUIRED_9",
+                    "DLC_APPAREL_ACQUIRED_10",
+                    "DLC_APPAREL_ACQUIRED_11",
+                    "DLC_APPAREL_ACQUIRED_12",
+                    "DLC_APPAREL_ACQUIRED_13",
+                    "DLC_APPAREL_ACQUIRED_14",
+                    "DLC_APPAREL_ACQUIRED_15",
+                    "DLC_APPAREL_ACQUIRED_16",
+                    "DLC_APPAREL_ACQUIRED_17",
+                    "DLC_APPAREL_ACQUIRED_18",
+                    "DLC_APPAREL_ACQUIRED_19",
+                    "DLC_APPAREL_ACQUIRED_20",
+                    "DLC_APPAREL_ACQUIRED_21",
+                    "DLC_APPAREL_ACQUIRED_22",
+                    "DLC_APPAREL_ACQUIRED_23",
+                    "DLC_APPAREL_ACQUIRED_24",
+                    "DLC_APPAREL_ACQUIRED_25",
+                    "DLC_APPAREL_ACQUIRED_26",
+                    "DLC_APPAREL_ACQUIRED_27",
+                    "DLC_APPAREL_ACQUIRED_28",
+                    "DLC_APPAREL_ACQUIRED_29",
+                    "DLC_APPAREL_ACQUIRED_30",
+                    "DLC_APPAREL_ACQUIRED_31",
+                    "DLC_APPAREL_ACQUIRED_32",
+                    "DLC_APPAREL_ACQUIRED_33",
+                    "DLC_APPAREL_ACQUIRED_34",
+                    "DLC_APPAREL_ACQUIRED_35",
+                    "DLC_APPAREL_ACQUIRED_36",
+                    "DLC_APPAREL_ACQUIRED_37",
+                    "DLC_APPAREL_ACQUIRED_38",
+                    "DLC_APPAREL_ACQUIRED_39",
+                    "DLC_APPAREL_ACQUIRED_40",
+                    "ADMIN_CLOTHES_GV_BS_1",
+                    "ADMIN_CLOTHES_GV_BS_2",
+                    "ADMIN_CLOTHES_GV_BS_3",
+                    "ADMIN_CLOTHES_GV_BS_4",
+                    "ADMIN_CLOTHES_GV_BS_5",
+                    "ADMIN_CLOTHES_GV_BS_6",
+                    "ADMIN_CLOTHES_GV_BS_7",
+                    "ADMIN_CLOTHES_GV_BS_8",
+                    "ADMIN_CLOTHES_GV_BS_9",
+                    "ADMIN_CLOTHES_GV_BS_10",
+                    "ADMIN_CLOTHES_GV_BS_11",
+                    "ADMIN_CLOTHES_GV_BS_12",
+                };
+
+                for (int i = 0; i <= array.Length - 1; i++)
+                {
+                    object[] arguments = new object[]
+                    {
+                        Games.CreateHash(string.Concat(new object[]
+                        {
+                            "MP",
+                            this.cmbCharacter.SelectedIndex,
+                            "_",
+                            array[i]
+                        })),
+                        -1,
+                        1
+                    };
+                }
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnHairStyles_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                string[] array = new string[]
+                {
+                    "CLTHS_AVAILABLE_HAIR",
+                    "CLTHS_AVAILABLE_HAIR_1",
+                    "CLTHS_AVAILABLE_HAIR_2",
+                    "CLTHS_AVAILABLE_HAIR_3",
+                    "CLTHS_AVAILABLE_HAIR_4",
+                    "CLTHS_AVAILABLE_HAIR_5",
+                    "CLTHS_AVAILABLE_HAIR_6",
+                    "CLTHS_AVAILABLE_HAIR_7"
+                };
+
+                for (int i = 0; i <= array.Length - 1; i++)
+                {
+                    object[] arguments = new object[]
+                    {
+                        Games.CreateHash(string.Concat(new object[]
+                        {
+                            "MP",
+                            this.cmbCharacter.SelectedIndex,
+                            "_",
+                            array[i]
+                        })),
+                        -1,
+                        1
+                    };
+                }
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnHeistVehicles_Click(object sender, EventArgs e)
+        {
+            if (jtag.Connect(out jtag))
+            {
+                object[] arguments = new object[]
+                {
+                    Games.CreateHash("MP" + this.cmbCharacter.SelectedIndex + "_CHAR_FM_VEHICLE_1_UNLCK"),
+                    -1,
+                    1
+                };
+
+                this.jtag.CallVoid(2194758720U, arguments);
+                object[] arguments2 = new object[]
+                {
+                    Games.CreateHash("MP" + this.cmbCharacter.SelectedIndex + "_CHAR_FM_VEHICLE_2_UNLCK"),
+                    -1,
+                    1
+                };
+            }
+
+            else
+            {
+                MessageBox.Show("Failed To Connect/Turn On Your Console!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnRemoveBadsport_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
